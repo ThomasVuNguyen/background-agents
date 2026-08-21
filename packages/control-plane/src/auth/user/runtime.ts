@@ -162,6 +162,7 @@ function createGitHubAuthConfig(
   return {
     clientId: credentials.clientId,
     clientSecret: credentials.clientSecret,
+    scope: ["read:user", "user:email"],
     getUserInfo: profile.getUserInfo,
   };
 }

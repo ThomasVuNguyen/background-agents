@@ -13,6 +13,7 @@ export const SESSION_UPDATE_AGE_MS = 24 * 60 * 60 * MS_PER_SECOND;
 export interface SocialProviderAuthConfig {
   readonly clientId: string;
   readonly clientSecret: string;
+  readonly scope?: string[];
   readonly getUserInfo: ProviderProfileResolver;
 }
 
@@ -75,7 +76,7 @@ export function createUserAuth(config: UserAuthConfig) {
         ? {
             github: {
               ...config.github,
-              disableDefaultScope: true,
+              scope: config.github.scope ? [...config.github.scope] : ["read:user", "user:email"],
             },
           }
         : {}),
@@ -83,6 +84,7 @@ export function createUserAuth(config: UserAuthConfig) {
         ? {
             google: {
               ...config.google,
+              scope: config.google.scope ? [...config.google.scope] : undefined,
               disableIdTokenSignIn: true,
             },
           }

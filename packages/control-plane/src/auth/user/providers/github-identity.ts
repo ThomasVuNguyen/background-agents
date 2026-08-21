@@ -14,6 +14,7 @@ const githubUserSchema = z.object({
   id: z.number().int().positive(),
   login: z.string().min(1),
   name: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
   avatar_url: z.url().nullable().optional(),
 });
 
@@ -21,7 +22,7 @@ const githubEmailSchema = z.object({
   email: z.email(),
   primary: z.boolean(),
   verified: z.boolean(),
-  visibility: z.string().nullable(),
+  visibility: z.string().nullable().optional(),
 });
 
 const githubEmailPageSchema = z.array(githubEmailSchema);
@@ -65,6 +66,17 @@ export class GitHubProviderIdentityResolver {
     const verifiedEmails = [
       ...new Set(verifiedEmailEntries.map((entry) => entry.email.toLowerCase())),
     ];
+    let primaryEmail =
+      verifiedEmailEntries.find((entry) => entry.primary)?.email.toLowerCase() ??
+      (user.email ? user.email.toLowerCase() : null);
+
+    if (!primaryEmail) {
+      primaryEmail = `${user.login}@users.noreply.github.com`;
+    }
+    if (!verifiedEmails.includes(primaryEmail)) {
+      verifiedEmails.push(primaryEmail);
+    }
+
     return {
       provider: "github",
       issuer: SIGN_IN_PROVIDER_ISSUERS.github,
@@ -73,8 +85,7 @@ export class GitHubProviderIdentityResolver {
       displayName: user.name ?? user.login,
       ...(user.avatar_url ? { avatarUrl: user.avatar_url } : {}),
       verifiedEmails,
-      primaryEmail:
-        verifiedEmailEntries.find((entry) => entry.primary)?.email.toLowerCase() ?? null,
+      primaryEmail,
     };
   }
 
@@ -105,6 +116,10 @@ export class GitHubProviderIdentityResolver {
       const response = await this.fetchWithTimeout(pageUrl, {
         headers: this.apiHeaders(accessToken),
       });
+      if (response.status === 401 || response.status === 403 || response.status === 404) {
+        // If /user/emails is forbidden or missing (e.g. scope restricted), fallback gracefully
+        return entries;
+      }
       if (!response.ok) {
         throw new OAuthProviderError(
           "provider_unavailable",
