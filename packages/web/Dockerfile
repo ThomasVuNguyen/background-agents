@@ -23,10 +23,13 @@ RUN npm ci
 # Copy clean source
 COPY . .
 
-# Build shared first, then web
+# Build shared first
 RUN npm run build -w @open-inspect/shared
+
+# Switch to production for Next.js build
+ENV NODE_ENV=production
 ENV NEXT_PUBLIC_WS_URL=wss://ramp.beenex.org
-RUN npm run build -w @open-inspect/web
+RUN cd packages/web && npx next build
 
 # Production runner
 FROM node:22-bookworm-slim AS runner
