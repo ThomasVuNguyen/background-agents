@@ -15,9 +15,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   outputFileTracingRoot: monorepoRoot,
-  turbopack: {
-    root: monorepoRoot,
-  },
 };
 
 export default nextConfig;

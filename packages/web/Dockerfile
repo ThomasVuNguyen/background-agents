@@ -26,10 +26,10 @@ COPY . .
 # Build shared first
 RUN npm run build -w @open-inspect/shared
 
-# Switch to production for Next.js build
+# Build web with full output visible
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_WS_URL=wss://ramp.beenex.org
-RUN cd packages/web && npx next build
+RUN npm run build -w @open-inspect/web -- --no-lint
 
 # Production runner
 FROM node:22-bookworm-slim AS runner
