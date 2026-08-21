@@ -1,0 +1,48 @@
+services:
+  control-plane:
+    build:
+      context: .
+      dockerfile: packages/control-plane/Dockerfile
+    restart: unless-stopped
+    environment:
+      - PORT=8787
+      - DATA_DIR=/data
+      - DEPLOYMENT_NAME=coolify-lenovo
+      - APP_NAME=Open-Inspect
+      - WORKER_URL=https://ramp.beenex.org
+      - WEB_APP_URL=https://ramp.beenex.org
+      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      - PROVIDER_ACCOUNTS_ENCRYPTION_KEY=${PROVIDER_ACCOUNTS_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      - REPO_SECRETS_ENCRYPTION_KEY=${REPO_SECRETS_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      - BROWSER_AUTH_SECRET=${BROWSER_AUTH_SECRET:-default-browser-auth-secret-min-32-chars-long}
+      - SERVICE_AUTH_SECRET_WEB=${SERVICE_AUTH_SECRET_WEB:-default-service-auth-secret-web-key-1234}
+      - UNSAFE_ALLOW_ALL_USERS=true
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
+      - GITHUB_APP_INSTALLATION_ID=${GITHUB_APP_INSTALLATION_ID}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SANDBOX_PROVIDER=${SANDBOX_PROVIDER:-modal}
+      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
+      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
+    volumes:
+      - openinspect_data:/data
+    ports:
+      - "8787:8787"
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - CONTROL_PLANE_URL=http://control-plane:8787
+      - NEXT_PUBLIC_WS_URL=wss://ramp.beenex.org
+      - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET_WEB:-default-service-auth-secret-web-key-1234}
+    depends_on:
+      - control-plane
+    ports:
+      - "3000:3000"
+
+volumes:
+  openinspect_data:

@@ -18,6 +18,8 @@ dist/
 build/
 .next/
 out/
+data/
+packages/*/data/
 
 # IDE
 .idea/
