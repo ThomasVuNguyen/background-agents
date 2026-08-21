@@ -2,13 +2,18 @@ FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Copy package manifests
+# Copy package manifests for workspace resolution
 COPY package.json package-lock.json ./
+COPY packages/control-plane/package.json ./packages/control-plane/
+COPY packages/github-bot/package.json ./packages/github-bot/
+COPY packages/linear-bot/package.json ./packages/linear-bot/
+COPY packages/opencomputer-infra/package.json ./packages/opencomputer-infra/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/slack-bot/package.json ./packages/slack-bot/
 COPY packages/web/package.json ./packages/web/
 
 # Install dependencies
-RUN npm ci --workspace=@open-inspect/shared --workspace=@open-inspect/web
+RUN npm ci --ignore-scripts
 
 # Copy source
 COPY packages/shared ./packages/shared
