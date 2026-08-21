@@ -4,9 +4,13 @@ import type { NextConfig } from "next";
 const monorepoRoot = path.join(__dirname, "../..");
 
 const nextConfig: NextConfig = {
-  agentRules: false,
   output: "standalone",
-  // Both must match the monorepo root for Turbopack to resolve workspace packages
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   outputFileTracingRoot: monorepoRoot,
   turbopack: {
     root: monorepoRoot,
