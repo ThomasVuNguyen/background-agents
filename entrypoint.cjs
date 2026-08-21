@@ -54,13 +54,20 @@ const server = http.createServer((req, res) => {
 
   const targetPort = isControlPlane ? CONTROL_PLANE_PORT : WEB_PORT;
 
+  const headers = { ...req.headers };
+  // Tell upstream Next.js that the connection is already HTTPS from Cloudflare / Traefik
+  headers['x-forwarded-proto'] = 'https';
+  if (headers['host']) {
+    headers['x-forwarded-host'] = headers['host'];
+  }
+
   const proxyReq = http.request(
     {
       hostname: '127.0.0.1',
       port: targetPort,
       path: req.url,
       method: req.method,
-      headers: req.headers,
+      headers: headers,
     },
     (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
@@ -85,12 +92,15 @@ server.on('upgrade', (req, socket, head) => {
 
   const targetPort = isControlPlane ? CONTROL_PLANE_PORT : WEB_PORT;
 
+  const headers = { ...req.headers };
+  headers['x-forwarded-proto'] = 'https';
+
   const proxyReq = http.request({
     hostname: '127.0.0.1',
     port: targetPort,
     path: req.url,
     method: req.method,
-    headers: req.headers,
+    headers: headers,
   });
 
   proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
