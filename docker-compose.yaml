@@ -26,6 +26,12 @@ services:
       - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
     volumes:
       - openinspect_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.controlplane.rule=Host(`ramp.beenex.org`) && (PathPrefix(`/sessions`) || PathPrefix(`/internal`))"
+      - "traefik.http.routers.controlplane.entrypoints=https,http"
+      - "traefik.http.routers.controlplane.priority=100"
+      - "traefik.http.services.controlplane.loadbalancer.server.port=8787"
     ports:
       - "8787:8787"
 
@@ -41,6 +47,12 @@ services:
       - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET_WEB:-default-service-auth-secret-web-key-1234}
     depends_on:
       - control-plane
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`ramp.beenex.org`)"
+      - "traefik.http.routers.web.entrypoints=https,http"
+      - "traefik.http.routers.web.priority=10"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
     ports:
       - "3000:3000"
 
