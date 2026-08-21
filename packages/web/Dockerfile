@@ -1,6 +1,7 @@
 FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
+ENV NODE_ENV=development
 
 # Copy package manifests for workspace resolution
 COPY package.json package-lock.json ./
@@ -12,8 +13,8 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/slack-bot/package.json ./packages/slack-bot/
 COPY packages/web/package.json ./packages/web/
 
-# Install dependencies
-RUN npm ci --ignore-scripts
+# Install dependencies including dev tools
+RUN npm ci --include=dev --ignore-scripts
 
 # Copy source
 COPY packages/shared ./packages/shared
