@@ -23,13 +23,11 @@ RUN npm ci
 # Copy clean source
 COPY . .
 
-# Build shared first
+# Build shared first, then web
 RUN npm run build -w @open-inspect/shared
-
-# Build web with full output visible
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_WS_URL=wss://ramp.beenex.org
-RUN npm run build -w @open-inspect/web -- --no-lint
+RUN npm run build -w @open-inspect/web
 
 # Production runner
 FROM node:22-bookworm-slim AS runner
