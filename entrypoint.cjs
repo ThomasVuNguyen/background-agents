@@ -7,11 +7,12 @@ const WEB_PORT = 3001;
 
 console.log(`[Open-Inspect] Starting background services...`);
 
-// 1. Start Control Plane on 8787
+// 1. Start Control Plane on 127.0.0.1:8787
 const cp = spawn('node', ['dist/server.cjs'], {
   stdio: 'inherit',
   env: {
     ...process.env,
+    HOST: '127.0.0.1',
     PORT: String(CONTROL_PLANE_PORT),
     DATA_DIR: process.env.DATA_DIR || '/data',
     DEPLOYMENT_NAME: process.env.DEPLOYMENT_NAME || 'coolify-lenovo',
@@ -20,11 +21,12 @@ const cp = spawn('node', ['dist/server.cjs'], {
   },
 });
 
-// 2. Start Next.js Web on 3001
+// 2. Start Next.js Web on 127.0.0.1:3001
 const web = spawn('node', ['packages/web/server.js'], {
   stdio: 'inherit',
   env: {
     ...process.env,
+    HOSTNAME: '127.0.0.1',
     PORT: String(WEB_PORT),
     CONTROL_PLANE_URL: `http://127.0.0.1:${CONTROL_PLANE_PORT}`,
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'wss://ramp.beenex.org',
@@ -45,8 +47,15 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// 3. Reverse Proxy Gateway on PORT (3000)
+// 3. Reverse Proxy Gateway on 0.0.0.0:PORT (3000)
 const server = http.createServer((req, res) => {
+  // Liveness check for Coolify / Traefik
+  if (req.url === '/healthz' || req.url === '/ping') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
+    return;
+  }
+
   const isControlPlane =
     req.url.startsWith('/sessions') ||
     req.url.startsWith('/internal') ||
@@ -55,11 +64,10 @@ const server = http.createServer((req, res) => {
   const targetPort = isControlPlane ? CONTROL_PLANE_PORT : WEB_PORT;
 
   const headers = { ...req.headers };
-  // Tell upstream Next.js that the connection is already HTTPS from Cloudflare / Traefik
-  headers['x-forwarded-proto'] = 'https';
-  if (headers['host']) {
-    headers['x-forwarded-host'] = headers['host'];
-  }
+  const host = headers['x-forwarded-host'] || headers['host'] || 'ramp.beenex.org';
+  headers['host'] = host;
+  headers['x-forwarded-host'] = host;
+  headers['x-forwarded-proto'] = headers['x-forwarded-proto'] || 'https';
 
   const proxyReq = http.request(
     {
@@ -76,6 +84,7 @@ const server = http.createServer((req, res) => {
   );
 
   proxyReq.on('error', (err) => {
+    console.error(`[Gateway Proxy Error] ${req.method} ${req.url} -> port ${targetPort}: ${err.message}`);
     res.writeHead(502, { 'Content-Type': 'text/plain' });
     res.end('Bad Gateway: ' + err.message);
   });
@@ -93,7 +102,10 @@ server.on('upgrade', (req, socket, head) => {
   const targetPort = isControlPlane ? CONTROL_PLANE_PORT : WEB_PORT;
 
   const headers = { ...req.headers };
-  headers['x-forwarded-proto'] = 'https';
+  const host = headers['x-forwarded-host'] || headers['host'] || 'ramp.beenex.org';
+  headers['host'] = host;
+  headers['x-forwarded-host'] = host;
+  headers['x-forwarded-proto'] = headers['x-forwarded-proto'] || 'https';
 
   const proxyReq = http.request({
     hostname: '127.0.0.1',
@@ -121,6 +133,7 @@ server.on('upgrade', (req, socket, head) => {
   });
 
   proxyReq.on('error', (err) => {
+    console.error(`[Gateway WS Proxy Error] ${req.url} -> port ${targetPort}: ${err.message}`);
     socket.destroy();
   });
 
