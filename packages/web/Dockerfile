@@ -3,7 +3,7 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 ENV NODE_ENV=development
 
-# Install build tools for native addons
+# Install build tools
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy package manifests for workspace resolution
@@ -16,8 +16,8 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/slack-bot/package.json ./packages/slack-bot/
 COPY packages/web/package.json ./packages/web/
 
-# Install dependencies including dev tools
-RUN npm ci --include=dev --ignore-scripts
+# Install dependencies with build tools
+RUN npm ci
 
 # Copy full repository source
 COPY . .

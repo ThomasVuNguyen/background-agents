@@ -16,14 +16,11 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/slack-bot/package.json ./packages/slack-bot/
 COPY packages/web/package.json ./packages/web/
 
-# Install dependencies including dev tools and rebuild native addons
-RUN npm ci --include=dev --ignore-scripts
-RUN npm rebuild better-sqlite3
+# Install dependencies with build tools
+RUN npm ci
 
 # Copy sources
-COPY packages/shared ./packages/shared
-COPY packages/control-plane ./packages/control-plane
-COPY terraform/d1/migrations ./terraform/d1/migrations
+COPY . .
 
 # Build shared first, then control-plane
 RUN npm run build -w @open-inspect/shared
