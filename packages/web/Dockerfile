@@ -3,6 +3,9 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 ENV NODE_ENV=development
 
+# Install build tools for native addons
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # Copy package manifests for workspace resolution
 COPY package.json package-lock.json ./
 COPY packages/control-plane/package.json ./packages/control-plane/
@@ -16,13 +19,13 @@ COPY packages/web/package.json ./packages/web/
 # Install dependencies including dev tools
 RUN npm ci --include=dev --ignore-scripts
 
-# Copy source
-COPY packages/shared ./packages/shared
-COPY packages/web ./packages/web
+# Copy full repository source
+COPY . .
 
 # Build shared first, then web
 RUN npm run build -w @open-inspect/shared
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_WS_URL=wss://ramp.beenex.org
 RUN npm run build -w @open-inspect/web
 
 # Production runner
