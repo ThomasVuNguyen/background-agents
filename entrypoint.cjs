@@ -1,4 +1,5 @@
 const http = require('http');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -6,6 +7,19 @@ const CONTROL_PLANE_PORT = 8787;
 const WEB_PORT = 3001;
 
 console.log(`[Open-Inspect] Starting background services...`);
+
+// Ensure matching fallback secrets for zero-config startup
+const SERVICE_SECRET =
+  process.env.SERVICE_AUTH_SECRET ||
+  process.env.SERVICE_AUTH_SECRET_WEB ||
+  'default-open-inspect-service-auth-secret-32-chars-long';
+
+const BROWSER_SECRET =
+  process.env.BROWSER_AUTH_SECRET ||
+  'default-open-inspect-browser-auth-secret-32-chars-long';
+
+const DEFAULT_ENC_KEY =
+  '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 // 1. Start Control Plane on 127.0.0.1:8787
 const cp = spawn('node', ['dist/server.cjs'], {
@@ -17,6 +31,13 @@ const cp = spawn('node', ['dist/server.cjs'], {
     DATA_DIR: process.env.DATA_DIR || '/data',
     DEPLOYMENT_NAME: process.env.DEPLOYMENT_NAME || 'coolify-lenovo',
     APP_NAME: process.env.APP_NAME || 'Open-Inspect',
+    SERVICE_AUTH_SECRET_WEB: SERVICE_SECRET,
+    BROWSER_AUTH_SECRET: BROWSER_SECRET,
+    TOKEN_ENCRYPTION_KEY: process.env.TOKEN_ENCRYPTION_KEY || DEFAULT_ENC_KEY,
+    PROVIDER_ACCOUNTS_ENCRYPTION_KEY:
+      process.env.PROVIDER_ACCOUNTS_ENCRYPTION_KEY || DEFAULT_ENC_KEY,
+    REPO_SECRETS_ENCRYPTION_KEY:
+      process.env.REPO_SECRETS_ENCRYPTION_KEY || DEFAULT_ENC_KEY,
     UNSAFE_ALLOW_ALL_USERS: 'true',
   },
 });
@@ -29,6 +50,8 @@ const web = spawn('node', ['packages/web/server.js'], {
     HOSTNAME: '127.0.0.1',
     PORT: String(WEB_PORT),
     CONTROL_PLANE_URL: `http://127.0.0.1:${CONTROL_PLANE_PORT}`,
+    SERVICE_AUTH_SECRET: SERVICE_SECRET,
+    BROWSER_AUTH_SECRET: BROWSER_SECRET,
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'wss://ramp.beenex.org',
   },
 });
