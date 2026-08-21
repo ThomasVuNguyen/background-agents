@@ -21,6 +21,10 @@ const BROWSER_SECRET =
 const DEFAULT_ENC_KEY =
   '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || 'placeholder-github-client-id';
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || 'placeholder-github-client-secret';
+const WEB_APP_URL = process.env.WEB_APP_URL || 'https://ramp.beenex.org';
+
 // 1. Start Control Plane on 127.0.0.1:8787
 const cp = spawn('node', ['dist/server.cjs'], {
   stdio: 'inherit',
@@ -38,6 +42,9 @@ const cp = spawn('node', ['dist/server.cjs'], {
       process.env.PROVIDER_ACCOUNTS_ENCRYPTION_KEY || DEFAULT_ENC_KEY,
     REPO_SECRETS_ENCRYPTION_KEY:
       process.env.REPO_SECRETS_ENCRYPTION_KEY || DEFAULT_ENC_KEY,
+    GITHUB_CLIENT_ID: GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: GITHUB_CLIENT_SECRET,
+    WEB_APP_URL: WEB_APP_URL,
     UNSAFE_ALLOW_ALL_USERS: 'true',
   },
 });
@@ -52,6 +59,9 @@ const web = spawn('node', ['packages/web/server.js'], {
     CONTROL_PLANE_URL: `http://127.0.0.1:${CONTROL_PLANE_PORT}`,
     SERVICE_AUTH_SECRET: SERVICE_SECRET,
     BROWSER_AUTH_SECRET: BROWSER_SECRET,
+    GITHUB_CLIENT_ID: GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: GITHUB_CLIENT_SECRET,
+    WEB_APP_URL: WEB_APP_URL,
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'wss://ramp.beenex.org',
   },
 });
