@@ -1,0 +1,16 @@
+node_modules
+*/node_modules
+*/*/node_modules
+.next
+*/.next
+*/*/.next
+dist
+*/dist
+*/*/dist
+.git
+.turbo
+.cache
+.venv
+venv
+data
+packages/*/data

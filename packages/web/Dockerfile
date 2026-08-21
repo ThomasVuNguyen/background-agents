@@ -3,7 +3,6 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Install build tools
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -21,16 +20,13 @@ COPY packages/web/package.json ./packages/web/
 # Install dependencies with build tools
 RUN npm ci
 
-# Copy full repository source
+# Copy clean source
 COPY . .
 
-# Build shared first
+# Build shared first, then web
 RUN npm run build -w @open-inspect/shared
-
-# Build web in its directory
-WORKDIR /app/packages/web
 ENV NEXT_PUBLIC_WS_URL=wss://ramp.beenex.org
-RUN npx next build
+RUN npm run build -w @open-inspect/web
 
 # Production runner
 FROM node:22-bookworm-slim AS runner
