@@ -1,3 +1,14 @@
+# =============================================================================
+# Open-Inspect — Production Docker Deployment (Coolify / self-hosted)
+# =============================================================================
+# This is the ACTUAL deployment config for this fork. See DEPLOYMENT.md for full
+# documentation. This runs on a self-hosted server behind Traefik (via Coolify)
+# at ramp.beenex.org.
+#
+# NOTE: The terraform/ directory and .github/workflows/ are upstream artifacts
+# and are NOT used by this deployment.
+# =============================================================================
+
 services:
   control-plane:
     build:

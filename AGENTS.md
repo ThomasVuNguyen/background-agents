@@ -1,5 +1,68 @@
 # AGENTS.md
 
+> **⚠️ THIS FORK'S DEPLOYMENT — READ FIRST**
+>
+> This is a fork (`ThomasVuNguyen/background-agents`) of the upstream `ColeMurray/background-agents`.
+> It is deployed as **Docker containers on a self-hosted server via Coolify PaaS**, NOT on Cloudflare
+> Workers, Vercel, or Terraform-managed infrastructure. The domain is `ramp.beenex.org`.
+>
+> **Do NOT use Terraform, wrangler, Vercel CLI, or Cloudflare APIs for deployment.**
+> **Do NOT reference Cloudflare D1, KV, R2, Durable Objects, or Queues as runtime services.**
+>
+> See [DEPLOYMENT.md](DEPLOYMENT.md) for the actual deployment setup.
+
+## This Fork's Actual Stack
+
+| Concern | Upstream (NOT used) | This Fork (ACTUAL) |
+|---------|--------------------|--------------------|
+| **Control plane hosting** | Cloudflare Workers | Docker container, plain Node.js (`server.cjs`) |
+| **Database** | Cloudflare D1 | Local SQLite via `better-sqlite3` at `/data/open-inspect.db` |
+| **Key-value cache** | Cloudflare KV | In-memory `Map` (volatile, lost on restart) |
+| **Object storage** | Cloudflare R2 | Filesystem at `/data/media/` |
+| **Session isolation** | Durable Objects | In-process `StandaloneSessionNamespace` |
+| **Cron / scheduled tasks** | CF Cron Triggers | `setInterval()` timers in `server.ts` |
+| **Async queues** | Cloudflare Queues | Not available in Docker mode |
+| **Web app hosting** | Vercel or CF Workers (OpenNext) | Docker container, Next.js standalone |
+| **Reverse proxy / TLS** | Cloudflare edge | Traefik (via Coolify) + Let's Encrypt |
+| **Bot workers (Slack/GitHub/Linear)** | Separate CF Workers | Not deployed in Docker mode |
+| **Sandbox provider** | Pluggable (Modal default) | Modal (runs on Modal's cloud) |
+| **Infrastructure-as-code** | Terraform | `docker-compose.yaml` |
+| **CI/CD** | GitHub Actions → Terraform apply | Coolify auto-deploy from git push |
+| **Domain** | `*.workers.dev` / Vercel | `ramp.beenex.org` |
+
+## Key Files for This Deployment
+
+| File | Purpose |
+|------|---------|
+| `docker-compose.yaml` | Production container definitions |
+| `Dockerfile` | Combined build (control-plane + web) |
+| `entrypoint.cjs` | In-process reverse proxy gateway |
+| `packages/control-plane/Dockerfile` | Standalone control-plane container |
+| `packages/web/Dockerfile` | Standalone web container |
+| `packages/control-plane/src/server.ts` | Node.js server entry point |
+| `packages/control-plane/src/config/env.ts` | Standalone environment setup (SQLite, filesystem, etc.) |
+
+## Build & Deploy (This Fork)
+
+```bash
+# Local development
+npm install
+npm run build -w @open-inspect/shared
+npm run build:node -w @open-inspect/control-plane   # Node.js build, NOT the CF Worker build
+npm run build -w @open-inspect/web
+
+# Deploy: push to ThomasVuNguyen/background-agents → Coolify auto-builds & deploys
+git push fork main
+```
+
+---
+
+## Upstream Reference Architecture (NOT used in this deployment)
+
+> The sections below describe the upstream ColeMurray/background-agents architecture.
+> This code exists in the repo for potential future use and upstream sync. It does NOT
+> reflect how this fork is deployed. Do not use it for deployment decisions.
+
 Open-Inspect is a background coding agent system that spawns sandboxed dev environments to work on
 GitHub repositories. Single-tenant design. Stack: Cloudflare Workers (TypeScript), Modal (Python),
 Next.js (React), Terraform.
